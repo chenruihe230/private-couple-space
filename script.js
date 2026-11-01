@@ -783,16 +783,100 @@ async function downloadExport() {
 
 let soundEnabled = localStorage.getItem("couple-sound-enabled") === "true";
 let audioContext = null;
+let ambientParts = [];
+let ambientTimer = null;
+let ambientChordIndex = 0;
+
+// WebAudio 合成轻柔背景和声，不加载任何外部音乐文件
+const ambientChords = [
+  [174.61, 220.00, 261.63],
+  [196.00, 246.94, 293.66],
+  [164.81, 207.65, 246.94],
+  [174.61, 220.00, 261.63]
+];
+
+function ensureAudio() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+
+  audioContext ||= new AudioContextClass();
+  if (audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+  return audioContext;
+}
+
+function startAmbientMusic() {
+  const context = ensureAudio();
+  if (!context || ambientParts.length) return;
+
+  const master = context.createGain();
+  master.gain.setValueAtTime(0.0001, context.currentTime);
+  master.gain.exponentialRampToValueAtTime(0.022, context.currentTime + 1.8);
+  master.connect(context.destination);
+
+  const voices = ambientChords[0].map((frequency, index) => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = index === 1 ? "triangle" : "sine";
+    oscillator.frequency.value = frequency;
+    gain.gain.value = index === 1 ? 0.13 : 0.18;
+    oscillator.connect(gain);
+    gain.connect(master);
+    oscillator.start();
+    return { oscillator, gain };
+  });
+
+  const lfo = context.createOscillator();
+  const lfoGain = context.createGain();
+  lfo.frequency.value = 0.075;
+  lfoGain.gain.value = 0.0045;
+  lfo.connect(lfoGain);
+  lfoGain.connect(master.gain);
+  lfo.start();
+
+  ambientParts = [{ master }, ...voices, { oscillator: lfo, gain: lfoGain }];
+  ambientTimer = window.setInterval(() => {
+    ambientChordIndex = (ambientChordIndex + 1) % ambientChords.length;
+    const nextChord = ambientChords[ambientChordIndex];
+    voices.forEach((voice, index) => {
+      voice.oscillator.frequency.linearRampToValueAtTime(nextChord[index], context.currentTime + 4.5);
+    });
+  }, 9000);
+}
+
+function stopAmbientMusic() {
+  if (ambientTimer) {
+    clearInterval(ambientTimer);
+    ambientTimer = null;
+  }
+
+  if (!ambientParts.length || !audioContext) return;
+  const masterPart = ambientParts.find((part) => part.master)?.master;
+  if (masterPart) {
+    masterPart.gain.cancelScheduledValues(audioContext.currentTime);
+    masterPart.gain.setValueAtTime(Math.max(masterPart.gain.value, 0.0001), audioContext.currentTime);
+    masterPart.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.65);
+  }
+
+  ambientParts.forEach((part) => {
+    if (part.oscillator) {
+      try {
+        part.oscillator.stop(audioContext.currentTime + 0.8);
+      } catch {}
+    }
+  });
+  ambientParts = [];
+}
 
 function playSound(type = "soft") {
   if (!soundEnabled) return;
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return;
+  const context = ensureAudio();
+  if (!context) return;
 
-  audioContext ||= new AudioContextClass();
-  const oscillator = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-  const now = audioContext.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const now = context.currentTime;
   const presets = {
     soft: [520, 0.08],
     heart: [660, 0.12],
@@ -806,11 +890,11 @@ function playSound(type = "soft") {
   oscillator.frequency.setValueAtTime(frequency, now);
   oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.18, now + duration);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.075, now + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.12);
 
   oscillator.connect(gain);
-  gain.connect(audioContext.destination);
+  gain.connect(context.destination);
   oscillator.start(now);
   oscillator.stop(now + duration + 0.15);
 }
@@ -818,20 +902,30 @@ function playSound(type = "soft") {
 function renderSoundButton() {
   const button = document.querySelector("#soundToggle");
   button.innerHTML = `<i data-lucide="${soundEnabled ? "volume-2" : "volume-x"}"></i>`;
-  button.setAttribute("aria-label", soundEnabled ? "关闭音效" : "开启音效");
-  button.title = soundEnabled ? "音效已开启" : "音效已静音";
+  button.setAttribute("aria-label", soundEnabled ? "关闭背景音乐与音效" : "开启背景音乐与音效");
+  button.title = soundEnabled ? "背景音乐与音效已开启" : "背景音乐与音效已静音";
   refreshIcons();
 }
 
 function initSound() {
   const button = document.querySelector("#soundToggle");
+
   button.addEventListener("click", () => {
     soundEnabled = !soundEnabled;
     localStorage.setItem("couple-sound-enabled", String(soundEnabled));
     renderSoundButton();
-    if (soundEnabled) playSound("heart");
-    showToast(soundEnabled ? "柔和音效已开启" : "音效已静音");
+
+    if (soundEnabled) {
+      ensureAudio();
+      startAmbientMusic();
+      playSound("heart");
+      showToast("柔和背景音乐与音效已开启");
+    } else {
+      stopAmbientMusic();
+      showToast("背景音乐与音效已静音");
+    }
   });
+
   renderSoundButton();
 }
 

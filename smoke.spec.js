@@ -90,6 +90,12 @@ test('两个人登录后可以共享心愿、留言和心情', async ({ browser 
   await expect(pageA.locator('#stationDialog')).toBeVisible();
   await pageA.locator('#stationName').click();
   await expect(pageA.locator('#stationQuote')).not.toHaveText('点击屏幕，收一句今天的暖心话');
+  await pageA.locator('#stationDialog .station-close').click();
+
+  await pageA.locator('#soundToggle').click();
+  await expect(pageA.locator('#soundToggle')).toHaveAttribute('aria-label', '关闭背景音乐与音效');
+  await pageA.locator('#soundToggle').click();
+  await expect(pageA.locator('#soundToggle')).toHaveAttribute('aria-label', '开启背景音乐与音效');
 
   const brokenImages = await pageA.locator('img').evaluateAll(images =>
     images.filter(image => !image.complete || image.naturalWidth === 0).map(image => image.src)
