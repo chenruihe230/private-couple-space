@@ -1,0 +1,12 @@
+{
+  "name": "private-couple-space",
+  "version": "1.0.0",
+  "private": true,
+  "description": "只有两个人可以进入的私密情侣互动空间",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

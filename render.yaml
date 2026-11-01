@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: private-couple-space
+    runtime: node
+    rootDir: .
+    buildCommand: ""
+    startCommand: node server.js
+    plan: starter
+    disk:
+      name: couple-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: NODE_ENV
+        value: production
+      - key: ROOM_ACCESS_CODE
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+    healthCheckPath: /api/health

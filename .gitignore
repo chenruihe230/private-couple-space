@@ -1,0 +1,7 @@
+private-config.json
+data/
+node_modules/
+test-results/
+*.png
+smoke.spec.js
+.env

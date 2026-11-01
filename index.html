@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7ebe5" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>两个人的小世界 · 情侣互动空间</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2732%27 fill=%27%23e8645a%27/%3E%3Cpath d=%27M32 49C17 39 13 31 17 24c4-7 13-6 15 1 3-7 12-8 16-1 4 7-1 15-16 25z%27 fill=%27white%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-grain" aria-hidden="true"></div>
+
+  <section class="auth-screen" id="authScreen" hidden>
+    <div class="auth-photo" aria-hidden="true"></div>
+    <div class="auth-overlay" aria-hidden="true"></div>
+    <div class="auth-panel">
+      <div class="auth-brand">
+        <span class="brand-mark"><i data-lucide="heart-handshake"></i></span>
+        <span>两个人的小世界</span>
+      </div>
+      <p class="eyebrow">PRIVATE FOR TWO</p>
+      <h1>只属于我们俩的<br>秘密空间</h1>
+      <p>输入共同暗号和你的昵称，进入后可以看到彼此留下的心情、悄悄话与纪念。</p>
+      <form id="loginForm">
+        <label for="loginName">你的昵称
+          <input id="loginName" maxlength="12" autocomplete="nickname" placeholder="比如：小夏" required />
+        </label>
+        <label for="loginCode">共同暗号
+          <input id="loginCode" type="password" autocomplete="current-password" placeholder="输入只有我们知道的暗号" required />
+        </label>
+        <button class="primary-button" type="submit"><i data-lucide="key-round"></i> 进入小世界</button>
+        <div class="auth-error" id="authError"></div>
+      </form>
+      <div class="auth-privacy"><i data-lucide="shield-check"></i><span>不被搜索引擎收录，仅限持有暗号的人进入</span></div>
+    </div>
+  </section>
+
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="回到首页">
+      <span class="brand-mark"><i data-lucide="heart-handshake"></i></span>
+      <span>两个人的小世界</span>
+    </a>
+    <nav class="main-nav" aria-label="主要导航">
+      <a href="#today">今日待办</a>
+      <a href="#quiz">默契挑战</a>
+      <a href="#dates">约会灵感</a>
+      <a href="#letters">想说的话</a>
+      <a href="#memories">纪念册</a>
+    </nav>
+    <button class="icon-button" id="openSettings" aria-label="设置纪念日">
+      <i data-lucide="settings-2"></i>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-photo" aria-hidden="true"></div>
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-content">
+        <div class="hero-kicker"><i data-lucide="sparkles"></i> TODAY, TOGETHER</div>
+        <h1>两个人的<br><span>小世界</span></h1>
+        <p>把那些微小的想念、约会和好心情，都认真收进属于你们的日常里。</p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#letters"><i data-lucide="pen-line"></i> 写下今天的想念</a>
+          <button class="secondary-button" id="surpriseBtn"><i data-lucide="wand-sparkles"></i> 给我一个小惊喜</button>
+        </div>
+        <div class="hero-note">
+          <i data-lucide="lock-keyhole"></i>
+          <span>所有内容仅保存在你的浏览器中</span>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#today" aria-label="查看今日互动">
+        <span>开始今天的互动</span>
+        <i data-lucide="arrow-down"></i>
+      </a>
+    </section>
+
+    <section class="love-meter" aria-label="恋爱状态概览">
+      <div class="meter-inner">
+        <div class="meter-item">
+          <span class="meter-label">在一起</span>
+          <strong id="daysTogether">520</strong>
+          <span class="meter-unit">天</span>
+        </div>
+        <div class="meter-separator"><i data-lucide="heart"></i></div>
+        <div class="meter-item">
+          <span class="meter-label">今日心动值</span>
+          <strong id="heartValue">98</strong>
+          <span class="meter-unit">%</span>
+        </div>
+        <div class="meter-separator"><i data-lucide="sparkles"></i></div>
+        <div class="meter-item">
+          <span class="meter-label">已完成的小心愿</span>
+          <strong id="wishDone">0</strong>
+          <span class="meter-unit">/ 5</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="today">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">01 · DAILY RITUAL</p>
+          <h2>今天的我们</h2>
+          <p class="section-intro">不用做什么大事，完成几个属于你们的小约定就好。</p>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-ring" id="progressRing"><span id="progressText">0%</span></div>
+          <div>
+            <strong>今日进度</strong>
+            <small>一起完成，更有仪式感</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="ritual-layout">
+        <div class="checklist-panel">
+          <div class="panel-title-row">
+            <h3>今日小心愿</h3>
+            <button class="text-button" id="resetWishes"><i data-lucide="rotate-ccw"></i> 重置</button>
+          </div>
+          <div class="wish-list" id="wishList">
+            <label class="wish-item">
+              <input type="checkbox" />
+              <span class="custom-check"><i data-lucide="check"></i></span>
+              <span class="wish-icon"><i data-lucide="message-circle-heart"></i></span>
+              <span class="wish-copy"><strong>认真说一句想念</strong><small>不发“在干嘛”，直接说想你了</small></span>
+            </label>
+            <label class="wish-item">
+              <input type="checkbox" />
+              <span class="custom-check"><i data-lucide="check"></i></span>
+              <span class="wish-icon"><i data-lucide="coffee"></i></span>
+              <span class="wish-copy"><strong>一起喝点喜欢的</strong><small>奶茶、咖啡，或者一碗热汤</small></span>
+            </label>
+            <label class="wish-item">
+              <input type="checkbox" />
+              <span class="custom-check"><i data-lucide="check"></i></span>
+              <span class="wish-icon"><i data-lucide="camera"></i></span>
+              <span class="wish-copy"><strong>留下一张今日照片</strong><small>不完美，也可以成为纪念</small></span>
+            </label>
+            <label class="wish-item">
+              <input type="checkbox" />
+              <span class="custom-check"><i data-lucide="check"></i></span>
+              <span class="wish-icon"><i data-lucide="armchair"></i></span>
+              <span class="wish-copy"><strong>拥抱超过十秒</strong><small>今天的疲惫，留给一个拥抱</small></span>
+            </label>
+            <label class="wish-item">
+              <input type="checkbox" />
+              <span class="custom-check"><i data-lucide="check"></i></span>
+              <span class="wish-icon"><i data-lucide="moon-star"></i></span>
+              <span class="wish-copy"><strong>睡前分享一件小事</strong><small>让今天好好地结束</small></span>
+            </label>
+          </div>
+        </div>
+
+        <aside class="mood-panel">
+          <div class="mood-art">
+            <div class="sun-shape"></div>
+            <div class="cloud cloud-one"></div>
+            <div class="cloud cloud-two"></div>
+            <div class="mood-heart"><i data-lucide="heart"></i></div>
+          </div>
+          <h3>现在的心情</h3>
+          <p>选一个最像你的词语，让对方知道今天过得怎样。</p>
+          <div class="mood-options" id="moodOptions">
+            <button data-mood="被爱包围" data-color="#f16a6a"><i data-lucide="heart"></i><span>甜一点</span></button>
+            <button data-mood="元气满满" data-color="#4b9b77"><i data-lucide="sun"></i><span>有元气</span></button>
+            <button data-mood="慢下来了" data-color="#4f78a8"><i data-lucide="cloud-sun"></i><span>慢一点</span></button>
+            <button data-mood="需要抱抱" data-color="#d57b42"><i data-lucide="cloud-rain"></i><span>抱抱我</span></button>
+          </div>
+          <div class="mood-result" id="moodResult">
+            <span class="mood-dot"></span>
+            <span>还没有选择今天的关键词</span>
+          </div>
+          <div class="partner-mood" id="partnerMood">TA 今天还没有留下心情</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section quiz-section" id="quiz">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">02 · QUIZ FOR TWO</p>
+          <h2>默契挑战</h2>
+          <p class="section-intro">先各自想好答案，再互相揭晓。答案不重要，笑出来才重要。</p>
+        </div>
+        <div class="score-display">
+          <span>当前默契分</span>
+          <strong><span id="quizScore">0</span><small>/ 3</small></strong>
+        </div>
+      </div>
+
+      <div class="quiz-shell">
+        <div class="quiz-progress"><span id="quizProgressBar"></span></div>
+        <div class="quiz-stage" id="quizStage">
+          <div class="question-number" id="questionNumber">问题 1 / 3</div>
+          <h3 id="questionText">如果现在突然放假一天，TA 最想去哪里？</h3>
+          <div class="answer-grid" id="answerGrid"></div>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+          <button class="primary-button" id="nextQuestion" disabled>下一题 <i data-lucide="arrow-right"></i></button>
+        </div>
+        <div class="quiz-result" id="quizResult" hidden>
+          <div class="result-heart"><i data-lucide="heart"></i></div>
+          <p class="eyebrow">QUIZ COMPLETE</p>
+          <h3 id="resultTitle">默契满分！</h3>
+          <p id="resultCopy">你们真的太懂彼此了。</p>
+          <button class="secondary-button" id="restartQuiz"><i data-lucide="refresh-cw"></i> 再挑战一次</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section date-section" id="dates">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">03 · DATE IDEAS</p>
+          <h2>下次见面做什么</h2>
+          <p class="section-intro">偶尔打破日常的固定路线，去制造一件只属于今天的记忆。</p>
+        </div>
+        <button class="secondary-button" id="shuffleDates"><i data-lucide="shuffle"></i> 换一组灵感</button>
+      </div>
+
+      <div class="date-grid" id="dateGrid"></div>
+    </section>
+
+    <section class="letter-section" id="letters">
+      <div class="letter-photo" aria-hidden="true"></div>
+      <div class="letter-overlay" aria-hidden="true"></div>
+      <div class="letter-content">
+        <div class="letter-copy">
+          <p class="eyebrow">04 · A NOTE FOR YOU</p>
+          <h2>把想说的话<br>留给彼此</h2>
+          <p>可以是一句感谢、一个小小抱怨，或者只是想在今天确认一下：我还在认真喜欢你。</p>
+          <div class="letter-tip">
+            <i data-lucide="lightbulb"></i>
+            <span>试试写：“今天想到你的时候，我正在……”</span>
+          </div>
+        </div>
+
+        <form class="note-form" id="noteForm">
+          <div class="form-topline">
+            <span><i data-lucide="mail-heart"></i> 新的悄悄话</span>
+            <span id="charCount">0 / 120</span>
+          </div>
+          <label for="noteText">写给 TA</label>
+          <textarea id="noteText" maxlength="120" placeholder="今天想到你的时候，我正在……" required></textarea>
+          <div class="note-options">
+            <div>
+              <span class="form-label">这句话是</span>
+              <div class="tag-picker" id="tagPicker">
+                <button type="button" class="selected" data-tag="想念">想念</button>
+                <button type="button" data-tag="感谢">感谢</button>
+                <button type="button" data-tag="夸夸">夸夸</button>
+                <button type="button" data-tag="小约定">小约定</button>
+              </div>
+            </div>
+            <button class="primary-button" type="submit"><i data-lucide="send"></i> 收进小信箱</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="notes-wall" id="notesWall">
+        <div class="notes-wall-head">
+          <h3>小信箱</h3>
+          <span>只属于你们的悄悄话</span>
+        </div>
+        <div class="notes-list" id="notesList"></div>
+      </div>
+    </section>
+
+    <section class="section" id="memories">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">05 · OUR LITTLE ARCHIVE</p>
+          <h2>我们的纪念册</h2>
+          <p class="section-intro">照片会记得阳光、风，还有那天你们看向彼此的样子。</p>
+        </div>
+        <button class="icon-button large" id="openMemory" aria-label="添加记忆"><i data-lucide="plus"></i></button>
+      </div>
+
+      <div class="memory-grid">
+        <figure class="memory-card memory-large">
+          <img src="assets/hero.jpg" alt="两个人牵手走在阳光下" />
+          <figcaption>
+            <span class="memory-tag">夏日限定</span>
+            <strong>那天风很轻，我们刚刚好</strong>
+            <small>2026.07.28 · 晴</small>
+          </figcaption>
+        </figure>
+        <figure class="memory-card">
+          <img src="assets/memory-1.jpg" alt="红色心形装饰" />
+          <figcaption><strong>心动不是偶然</strong><small>被记住的小细节</small></figcaption>
+        </figure>
+        <figure class="memory-card">
+          <img src="assets/memory-2.jpg" alt="夕阳下靠近的两个人" />
+          <figcaption><strong>一起看晚霞</strong><small>每次都很美</small></figcaption>
+        </figure>
+        <figure class="memory-card">
+          <img src="assets/memory-3.jpg" alt="婚礼与牵手的记忆" />
+          <figcaption><strong>以后也要牵手</strong><small>慢慢走，不着急</small></figcaption>
+        </figure>
+        <figure class="memory-card">
+          <img src="assets/memory-4.jpg" alt="婚礼现场的温柔瞬间" />
+          <figcaption><strong>普通的浪漫</strong><small>都值得被保存</small></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="closing-section">
+      <div class="closing-inner">
+        <div class="closing-icon"><i data-lucide="heart-handshake"></i></div>
+        <h2>今天也要好好喜欢彼此</h2>
+        <p>愿每一个普通的日子，都因为有你而变得特别。</p>
+        <button class="primary-button" id="closeDayBtn"><i data-lucide="moon"></i> 保存今天，好好说晚安</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="brand footer-brand"><span class="brand-mark"><i data-lucide="heart-handshake"></i></span><span>两个人的小世界</span></div>
+    <p>一份写给日常、想念与见面的小空间。</p>
+    <span>LOCAL LOVE SPACE · 2026</span>
+  </footer>
+
+  <dialog class="settings-dialog" id="settingsDialog">
+    <form method="dialog" class="dialog-panel" id="settingsForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">SET YOUR DATE</p>
+          <h2>设置你们的纪念日</h2>
+        </div>
+        <button class="icon-button" value="cancel" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <label>我们在一起的日期
+        <input type="date" id="startDate" value="2025-06-16" />
+      </label>
+      <label>给这段关系起个名字
+        <input type="text" id="coupleName" value="我们的小世界" maxlength="20" />
+      </label>
+      <button class="primary-button" value="default" type="submit"><i data-lucide="check"></i> 保存设置</button>
+    </form>
+  </dialog>
+
+  <dialog class="memory-dialog" id="memoryDialog">
+    <form class="dialog-panel" id="memoryForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">NEW MEMORY</p>
+          <h2>添加一条新记忆</h2>
+        </div>
+        <button class="icon-button" type="button" id="closeMemory" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <label>记忆标题
+        <input type="text" id="memoryTitle" maxlength="30" placeholder="比如：那天的晚霞" required />
+      </label>
+      <label>当时发生了什么
+        <input type="text" id="memoryCaption" maxlength="40" placeholder="一句话就好" required />
+      </label>
+      <button class="primary-button" type="submit"><i data-lucide="image-plus"></i> 保存记忆</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status">
+    <i data-lucide="sparkles"></i>
+    <span id="toastText">已经保存好啦</span>
+  </div>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
