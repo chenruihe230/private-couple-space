@@ -781,13 +781,15 @@ async function downloadExport() {
   }
 }
 
-let soundEnabled = localStorage.getItem("couple-sound-enabled") === "true";
+// 默认静音，避免页面打开时突然播放声音
+let soundEnabled = false;
 let audioContext = null;
+let backgroundMusic = null;
 let ambientParts = [];
 let ambientTimer = null;
 let ambientChordIndex = 0;
 
-// WebAudio 合成轻柔背景和声，不加载任何外部音乐文件
+// WebAudio 合成轻柔背景和声，作为 MP3 无法播放时的备用方案
 const ambientChords = [
   [174.61, 220.00, 261.63],
   [196.00, 246.94, 293.66],
@@ -909,18 +911,36 @@ function renderSoundButton() {
 
 function initSound() {
   const button = document.querySelector("#soundToggle");
+  backgroundMusic = document.querySelector("#backgroundMusic");
+  backgroundMusic.volume = 0.18;
+
+  backgroundMusic.addEventListener("error", () => {
+    if (soundEnabled) {
+      startAmbientMusic();
+      showToast("音乐文件暂时无法播放，已切换为合成背景声");
+    }
+  });
 
   button.addEventListener("click", () => {
     soundEnabled = !soundEnabled;
-    localStorage.setItem("couple-sound-enabled", String(soundEnabled));
     renderSoundButton();
 
     if (soundEnabled) {
       ensureAudio();
-      startAmbientMusic();
+      const playPromise = backgroundMusic.play();
+      if (playPromise?.then) {
+        playPromise
+          .then(() => stopAmbientMusic())
+          .catch(() => {
+            startAmbientMusic();
+          });
+      } else {
+        stopAmbientMusic();
+      }
       playSound("heart");
-      showToast("柔和背景音乐与音效已开启");
+      showToast("背景音乐与音效已开启");
     } else {
+      backgroundMusic.pause();
       stopAmbientMusic();
       showToast("背景音乐与音效已静音");
     }
