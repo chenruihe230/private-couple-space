@@ -1,15 +1,34 @@
-const STORAGE_KEY = "couple-space-v1";
+// 关键配置：纪念日、周日下课时间、她的名字和暖心文案都可以在这里快速修改
+const USER_CONFIG = {
+  defaultStartDate: "2026-10-22",
+  defaultGirlName: "她",
+  defaultSundayClassEndTime: "17:00",
+  warmMessages: [
+    "今天辛苦了，你已经做得比自己想象中更好。",
+    "不用一直坚强，累了就靠过来一点。",
+    "世界偶尔催促你，但我们可以慢慢来。",
+    "你不是一个人在撑过这个星期。",
+    "等下课以后，把烦恼留在教室里吧。",
+    "今天也有在认真喜欢你。",
+    "我们不用赶路，慢慢走向同一个方向就好。"
+  ],
+  hiddenLetter: "这是一封只留给你的小字信。\n\n我知道有些疲惫不需要被解决，只需要被看见。谢谢你一直在认真生活，也谢谢你愿意把一部分普通日子交给我。等下课以后，记得把肩膀放松一点。今天不用成为很厉害的人，只要还是你就好。"
+};
 
 const defaultState = {
   settings: {
-    startDate: "2025-06-16",
-    coupleName: "我们的小世界"
+    startDate: USER_CONFIG.defaultStartDate,
+    coupleName: "我们的小世界",
+    girlName: USER_CONFIG.defaultGirlName,
+    sundayClassEndTime: USER_CONFIG.defaultSundayClassEndTime
   },
   completedWishes: [],
   moods: {},
   notes: [],
   memories: [],
   datePicks: {},
+  vents: [],
+  coupons: [],
   users: [],
   closedDays: 0
 };
@@ -83,6 +102,8 @@ function normalizeState(state) {
     notes: Array.isArray(state?.notes) ? state.notes : [],
     memories: Array.isArray(state?.memories) ? state.memories : [],
     datePicks: state?.datePicks || {},
+    vents: Array.isArray(state?.vents) ? state.vents : [],
+    coupons: Array.isArray(state?.coupons) ? state.coupons : [],
     users: Array.isArray(state?.users) ? state.users : []
   };
 }
@@ -439,12 +460,18 @@ function initNotes() {
 }
 
 function renderMemoryAddition(memory) {
-  const grid = document.querySelector(".memory-grid");
+  const grid = document.querySelector("#memoryGrid");
   const figure = document.createElement("figure");
   figure.className = "memory-card";
+
   const image = document.createElement("img");
-  image.src = "assets/memory-2.jpg";
+  // 自定义图片 URL 可以展示异地合照、聊天截图或共同旅行照片
+  image.src = memory.image || "assets/memory-2.jpg";
   image.alt = memory.title;
+  image.addEventListener("error", () => {
+    image.src = "assets/memory-2.jpg";
+  });
+
   const caption = document.createElement("figcaption");
   const title = document.createElement("strong");
   title.textContent = memory.title;
@@ -453,6 +480,14 @@ function renderMemoryAddition(memory) {
   caption.append(title, description);
   figure.append(image, caption);
   grid.appendChild(figure);
+  document.querySelector("#memoryEmpty").hidden = true;
+}
+
+function renderMemories() {
+  const grid = document.querySelector("#memoryGrid");
+  grid.innerHTML = "";
+  sharedState.memories.forEach(renderMemoryAddition);
+  document.querySelector("#memoryEmpty").hidden = sharedState.memories.length > 0;
 }
 
 function initMemoryDialog() {
@@ -466,10 +501,11 @@ function initMemoryDialog() {
     event.preventDefault();
     const title = document.querySelector("#memoryTitle").value.trim();
     const caption = document.querySelector("#memoryCaption").value.trim();
+    const image = document.querySelector("#memoryImage").value.trim();
     if (!title || !caption) return;
     try {
-      await updateShared("memory", { title, caption });
-      renderMemoryAddition({ title, caption, author: currentUser });
+      await updateShared("memory", { title, caption, image });
+      renderMemories();
       form.reset();
       dialog.close();
       showToast("新的记忆已经放进纪念册");
@@ -479,7 +515,7 @@ function initMemoryDialog() {
     }
   });
 
-  sharedState.memories.forEach(renderMemoryAddition);
+  renderMemories();
 }
 
 function initSettings() {
@@ -487,9 +523,13 @@ function initSettings() {
   const form = document.querySelector("#settingsForm");
   const startDate = document.querySelector("#startDate");
   const coupleName = document.querySelector("#coupleName");
+  const girlName = document.querySelector("#girlName");
+  const classTime = document.querySelector("#settingsClassTime");
 
   startDate.value = sharedState.settings.startDate;
   coupleName.value = sharedState.settings.coupleName;
+  girlName.value = sharedState.settings.girlName || USER_CONFIG.defaultGirlName;
+  classTime.value = sharedState.settings.sundayClassEndTime || USER_CONFIG.defaultSundayClassEndTime;
   document.querySelector("#openSettings").addEventListener("click", () => dialog.showModal());
 
   form.addEventListener("submit", async (event) => {
@@ -497,15 +537,388 @@ function initSettings() {
     try {
       await updateShared("settings", {
         startDate: startDate.value,
-        coupleName: coupleName.value.trim()
+        coupleName: coupleName.value.trim(),
+        girlName: girlName.value.trim(),
+        sundayClassEndTime: classTime.value
       });
       calculateDaysTogether();
+      renderCountdown();
+      renderStation();
       document.title = `${sharedState.settings.coupleName} · 情侣互动空间`;
       dialog.close();
       showToast("纪念日设置好啦");
     } catch (error) {
       showToast(error.message);
     }
+  });
+
+  document.querySelector("#exportData").addEventListener("click", downloadExport);
+}
+
+function renderVents() {
+  const list = document.querySelector("#ventList");
+  list.innerHTML = "";
+
+  if (!sharedState.vents.length) {
+    const empty = document.createElement("div");
+    empty.className = "vent-empty";
+    empty.textContent = "还没有碎碎念。写一句不需要认真解释的话也可以。";
+    list.appendChild(empty);
+    return;
+  }
+
+  sharedState.vents.slice(0, 5).forEach((vent) => {
+    const item = document.createElement("article");
+    item.className = "vent-item";
+
+    const mark = document.createElement("span");
+    mark.className = "vent-mark";
+    mark.innerHTML = '<i data-lucide="cloud"></i>';
+
+    const text = document.createElement("p");
+    text.textContent = vent.text;
+
+    const meta = document.createElement("span");
+    meta.textContent = `${vent.author || "我"} · ${formatTime(vent.time)}`;
+
+    item.append(mark, text, meta);
+    list.appendChild(item);
+  });
+
+  refreshIcons();
+}
+
+function initVents() {
+  const form = document.querySelector("#ventForm");
+  const input = document.querySelector("#ventText");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    try {
+      await updateShared("vent", { text });
+      renderVents();
+      form.reset();
+      playSound("write");
+      showToast("已经轻轻放下这句疲惫");
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+
+  renderVents();
+}
+
+function renderCoupons() {
+  const grid = document.querySelector("#couponGrid");
+  grid.innerHTML = "";
+
+  if (!sharedState.coupons.length) {
+    const empty = document.createElement("div");
+    empty.className = "coupon-empty";
+    empty.textContent = "还没有兑换券。先把一个想为对方做的小事写下来吧。";
+    grid.appendChild(empty);
+    return;
+  }
+
+  sharedState.coupons.forEach((coupon) => {
+    const uses = Array.isArray(coupon.uses) ? coupon.uses : [];
+    const used = coupon.active === false;
+    const card = document.createElement("article");
+    card.className = `coupon-card ${used ? "used" : ""}`;
+
+    const top = document.createElement("div");
+    top.className = "coupon-topline";
+    top.innerHTML = `<span>LOVE COUPON</span><span>${used ? "已核销" : "可使用"}</span>`;
+
+    const title = document.createElement("h3");
+    title.className = "coupon-title";
+    title.textContent = coupon.title;
+
+    const note = document.createElement("p");
+    note.className = "coupon-note";
+    note.textContent = coupon.note || "由送出的人认真兑现。";
+
+    const log = document.createElement("div");
+    log.className = "coupon-log";
+    if (uses.length) {
+      const latest = uses[uses.length - 1];
+      log.textContent = `使用日志：${latest.by || "对方"} 于 ${formatTime(latest.time)} 核销 · 累计 ${uses.length} 次`;
+    } else {
+      log.textContent = `由 ${coupon.issuer || "我"} 制作 · 还没有核销记录`;
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "coupon-actions";
+
+    const redeem = document.createElement("button");
+    redeem.type = "button";
+    redeem.className = "primary-button";
+    redeem.innerHTML = used
+      ? '<i data-lucide="rotate-ccw"></i> 恢复可使用'
+      : '<i data-lucide="ticket-check"></i> 标记核销';
+    redeem.addEventListener("click", async () => {
+      try {
+        await updateShared(used ? "couponReset" : "couponRedeem", { id: coupon.id });
+        renderCoupons();
+        playSound(used ? "reset" : "coupon");
+        showToast(used ? "兑换券已经恢复" : "兑换券已核销，使用记录已保存");
+        if (!used) burstHearts(10);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+
+    actions.append(redeem);
+    card.append(top, title, note, log, actions);
+    grid.appendChild(card);
+  });
+
+  refreshIcons();
+}
+
+function initCoupons() {
+  const dialog = document.querySelector("#couponDialog");
+  const form = document.querySelector("#couponForm");
+
+  document.querySelector("#openCoupon").addEventListener("click", () => dialog.showModal());
+  document.querySelector("#closeCoupon").addEventListener("click", () => dialog.close());
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = document.querySelector("#couponTitle").value.trim();
+    const note = document.querySelector("#couponNote").value.trim();
+    if (!title) return;
+    try {
+      await updateShared("couponCreate", { title, note });
+      renderCoupons();
+      form.reset();
+      dialog.close();
+      playSound("coupon");
+      showToast("新的兑换券已经做好");
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+
+  renderCoupons();
+}
+
+function nextSundayTarget(timeValue) {
+  const [hour, minute] = String(timeValue || USER_CONFIG.defaultSundayClassEndTime)
+    .split(":")
+    .map(Number);
+  const target = new Date();
+  target.setHours(hour || 17, minute || 0, 0, 0);
+
+  const daysUntilSunday = (7 - target.getDay()) % 7;
+  target.setDate(target.getDate() + daysUntilSunday);
+  if (target <= new Date()) {
+    target.setDate(target.getDate() + 7);
+  }
+  return target;
+}
+
+function renderCountdown() {
+  const display = document.querySelector("#sundayCountdown");
+  if (!display) return;
+
+  const timeValue = sharedState.settings.sundayClassEndTime || USER_CONFIG.defaultSundayClassEndTime;
+  const target = nextSundayTarget(timeValue);
+  const diff = Math.max(0, target - new Date());
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+
+  display.textContent = `${days}天 ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function initCountdown() {
+  const homeInput = document.querySelector("#sundayClassTime");
+  const settingsInput = document.querySelector("#settingsClassTime");
+  const value = sharedState.settings.sundayClassEndTime || USER_CONFIG.defaultSundayClassEndTime;
+  homeInput.value = value;
+  settingsInput.value = value;
+
+  const update = async (nextValue) => {
+    try {
+      await updateShared("settings", {
+        startDate: sharedState.settings.startDate,
+        coupleName: sharedState.settings.coupleName,
+        girlName: sharedState.settings.girlName,
+        sundayClassEndTime: nextValue
+      });
+      homeInput.value = nextValue;
+      settingsInput.value = nextValue;
+      renderCountdown();
+      showToast("周日下课时间已经更新");
+    } catch (error) {
+      showToast(error.message);
+    }
+  };
+
+  homeInput.addEventListener("change", () => update(homeInput.value));
+  settingsInput.addEventListener("change", () => update(settingsInput.value));
+  renderCountdown();
+  setInterval(renderCountdown, 1000);
+}
+
+async function downloadExport() {
+  try {
+    const response = await fetch("/api/export", { credentials: "same-origin" });
+    if (!response.ok) throw new Error("导出失败，请重新登录后再试");
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `两个人的小世界-备份-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast("完整记录已导出，请妥善保存");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+let soundEnabled = localStorage.getItem("couple-sound-enabled") === "true";
+let audioContext = null;
+
+function playSound(type = "soft") {
+  if (!soundEnabled) return;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  audioContext ||= new AudioContextClass();
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const now = audioContext.currentTime;
+  const presets = {
+    soft: [520, 0.08],
+    heart: [660, 0.12],
+    write: [420, 0.07],
+    coupon: [740, 0.12],
+    reset: [360, 0.08]
+  };
+  const [frequency, duration] = presets[type] || presets.soft;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(frequency, now);
+  oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.18, now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.12);
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.15);
+}
+
+function renderSoundButton() {
+  const button = document.querySelector("#soundToggle");
+  button.innerHTML = `<i data-lucide="${soundEnabled ? "volume-2" : "volume-x"}"></i>`;
+  button.setAttribute("aria-label", soundEnabled ? "关闭音效" : "开启音效");
+  button.title = soundEnabled ? "音效已开启" : "音效已静音";
+  refreshIcons();
+}
+
+function initSound() {
+  const button = document.querySelector("#soundToggle");
+  button.addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem("couple-sound-enabled", String(soundEnabled));
+    renderSoundButton();
+    if (soundEnabled) playSound("heart");
+    showToast(soundEnabled ? "柔和音效已开启" : "音效已静音");
+  });
+  renderSoundButton();
+}
+
+function createHeartParticle(rain = false) {
+  const heart = document.createElement("span");
+  heart.className = "heart-particle";
+  heart.textContent = Math.random() > 0.28 ? "♥" : "✦";
+  heart.style.left = `${8 + Math.random() * 84}vw`;
+  heart.style.top = `${18 + Math.random() * 48}vh`;
+  heart.style.color = Math.random() > 0.52 ? "#e8645a" : "#d88969";
+  heart.style.fontSize = `${rain ? 18 : 13}px`;
+  heart.style.setProperty("--drift", `${(Math.random() - 0.5) * (rain ? 320 : 180)}px`);
+  heart.style.animationDuration = `${rain ? 2.4 : 1.7}s`;
+  document.body.appendChild(heart);
+  setTimeout(() => heart.remove(), 3100);
+}
+
+function softHeartBurst(count = 8) {
+  for (let index = 0; index < count; index += 1) {
+    setTimeout(() => createHeartParticle(false), index * 70);
+  }
+}
+
+function heartRain(count = 32) {
+  for (let index = 0; index < count; index += 1) {
+    setTimeout(() => createHeartParticle(true), index * 45);
+  }
+}
+
+function renderStation() {
+  const name = sharedState.settings.girlName || USER_CONFIG.defaultGirlName;
+  document.querySelector("#stationName").textContent = name;
+}
+
+function initStation() {
+  const dialog = document.querySelector("#stationDialog");
+  const screen = document.querySelector("#stationScreen");
+  const quote = document.querySelector("#stationQuote");
+  const nameButton = document.querySelector("#stationName");
+  const hint = document.querySelector("#secretLetterHint");
+  const letter = document.querySelector("#hiddenLetter");
+  let holdTimer = null;
+
+  renderStation();
+  document.querySelector("#hiddenLetterText").textContent = USER_CONFIG.hiddenLetter;
+
+  document.querySelector("#stationButton").addEventListener("click", () => {
+    letter.hidden = true;
+    dialog.showModal();
+    renderStation();
+  });
+
+  document.querySelector("#closeStation").addEventListener("click", () => dialog.close());
+
+  screen.addEventListener("click", () => {
+    const message = USER_CONFIG.warmMessages[Math.floor(Math.random() * USER_CONFIG.warmMessages.length)];
+    quote.textContent = message;
+    quote.classList.remove("show");
+    requestAnimationFrame(() => quote.classList.add("show"));
+    softHeartBurst(8);
+    playSound("soft");
+  });
+
+  nameButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    heartRain(34);
+    quote.textContent = `${nameButton.textContent}，今天也已经很努力了。`;
+    quote.classList.add("show");
+    playSound("heart");
+  });
+
+  const openLetter = () => {
+    letter.hidden = false;
+    playSound("heart");
+    softHeartBurst(10);
+  };
+
+  hint.addEventListener("pointerdown", () => {
+    holdTimer = setTimeout(openLetter, 800);
+  });
+
+  ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+    hint.addEventListener(eventName, () => clearTimeout(holdTimer));
+  });
+
+  hint.addEventListener("click", (event) => {
+    event.stopPropagation();
   });
 }
 
@@ -565,9 +978,14 @@ function initApp() {
   initMood();
   initQuiz();
   initDates();
+  initVents();
+  initCoupons();
   initNotes();
   initMemoryDialog();
   initSettings();
+  initCountdown();
+  initSound();
+  initStation();
   initGlobalActions();
   document.title = `${sharedState.settings.coupleName} · 情侣互动空间`;
   refreshIcons();
@@ -582,6 +1000,10 @@ async function refreshFromServer() {
     updateWishProgress();
     renderMoodPanel();
     renderNotes();
+    renderVents();
+    renderCoupons();
+    renderCountdown();
+    renderStation();
     renderDateIdeas(visibleDateIdeas);
   } catch {
     showAuth("登录已过期，请重新进入");

@@ -49,12 +49,18 @@
       <a href="#today">今日待办</a>
       <a href="#quiz">默契挑战</a>
       <a href="#dates">约会灵感</a>
+      <a href="#coupons">兑换券</a>
       <a href="#letters">想说的话</a>
       <a href="#memories">纪念册</a>
     </nav>
-    <button class="icon-button" id="openSettings" aria-label="设置纪念日">
-      <i data-lucide="settings-2"></i>
-    </button>
+    <div class="topbar-actions">
+      <button class="icon-button" id="soundToggle" aria-label="开启音效" title="全局音效">
+        <i data-lucide="volume-x"></i>
+      </button>
+      <button class="icon-button" id="openSettings" aria-label="设置纪念日">
+        <i data-lucide="settings-2"></i>
+      </button>
+    </div>
   </header>
 
   <main>
@@ -71,7 +77,7 @@
         </div>
         <div class="hero-note">
           <i data-lucide="lock-keyhole"></i>
-          <span>所有内容仅保存在你的浏览器中</span>
+          <span>数据通过私密后端同步给两个人</span>
         </div>
       </div>
       <a class="scroll-cue" href="#today" aria-label="查看今日互动">
@@ -102,7 +108,24 @@
       </div>
     </section>
 
-    <section class="section" id="today">
+    <section class="sunday-countdown-band" aria-label="周日下课倒计时">
+    <div class="countdown-inner">
+      <div class="countdown-copy">
+        <div class="countdown-icon"><i data-lucide="calendar-clock"></i></div>
+        <div>
+          <p class="eyebrow">SUNDAY RECHARGE</p>
+          <h2>周日下课倒计时</h2>
+          <p>等到下课，就把这一周慢慢放下来。</p>
+        </div>
+      </div>
+      <div class="countdown-display" id="sundayCountdown">--天 --:--:--</div>
+      <label class="countdown-setting">每周下课时间
+        <input type="time" id="sundayClassTime" value="17:00" />
+      </label>
+    </div>
+  </section>
+
+  <section class="section" id="today">
       <div class="section-heading">
         <div>
           <p class="eyebrow">01 · DAILY RITUAL</p>
@@ -182,6 +205,25 @@
       </div>
     </section>
 
+    <section class="vents-panel">
+      <div class="vents-heading">
+        <div>
+          <p class="eyebrow">A TINY RANT</p>
+          <h2>疲惫碎碎念</h2>
+          <p>不催回复，也不用把情绪说得完整。写一句，就很好。</p>
+        </div>
+        <span class="quiet-badge"><i data-lucide="bell-off"></i> 无消息提醒</span>
+      </div>
+      <form class="vent-form" id="ventForm">
+        <label for="ventText">此刻最想说的一句</label>
+        <div class="vent-input-row">
+          <input id="ventText" maxlength="80" placeholder="今天有点累，不过想到你就觉得还可以坚持一下。" required />
+          <button class="primary-button" type="submit"><i data-lucide="message-circle"></i> 写下来</button>
+        </div>
+      </form>
+      <div class="vent-list" id="ventList"></div>
+    </section>
+
     <section class="section quiz-section" id="quiz">
       <div class="section-heading">
         <div>
@@ -225,6 +267,18 @@
       </div>
 
       <div class="date-grid" id="dateGrid"></div>
+    </section>
+
+    <section class="section coupon-section" id="coupons">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LOVE COUPONS</p>
+          <h2>爱情兑换券</h2>
+          <p class="section-intro">把想为对方做的小事做成一张券，用掉的时候会自动留下记录。</p>
+        </div>
+        <button class="secondary-button" id="openCoupon"><i data-lucide="ticket-plus"></i> 新增兑换券</button>
+      </div>
+      <div class="coupon-grid" id="couponGrid"></div>
     </section>
 
     <section class="letter-section" id="letters">
@@ -282,31 +336,11 @@
         <button class="icon-button large" id="openMemory" aria-label="添加记忆"><i data-lucide="plus"></i></button>
       </div>
 
-      <div class="memory-grid">
-        <figure class="memory-card memory-large">
-          <img src="assets/hero.jpg" alt="两个人牵手走在阳光下" />
-          <figcaption>
-            <span class="memory-tag">夏日限定</span>
-            <strong>那天风很轻，我们刚刚好</strong>
-            <small>2026.07.28 · 晴</small>
-          </figcaption>
-        </figure>
-        <figure class="memory-card">
-          <img src="assets/memory-1.jpg" alt="红色心形装饰" />
-          <figcaption><strong>心动不是偶然</strong><small>被记住的小细节</small></figcaption>
-        </figure>
-        <figure class="memory-card">
-          <img src="assets/memory-2.jpg" alt="夕阳下靠近的两个人" />
-          <figcaption><strong>一起看晚霞</strong><small>每次都很美</small></figcaption>
-        </figure>
-        <figure class="memory-card">
-          <img src="assets/memory-3.jpg" alt="婚礼与牵手的记忆" />
-          <figcaption><strong>以后也要牵手</strong><small>慢慢走，不着急</small></figcaption>
-        </figure>
-        <figure class="memory-card">
-          <img src="assets/memory-4.jpg" alt="婚礼现场的温柔瞬间" />
-          <figcaption><strong>普通的浪漫</strong><small>都值得被保存</small></figcaption>
-        </figure>
+      <div class="memory-grid" id="memoryGrid"></div>
+      <div class="memory-empty" id="memoryEmpty">
+        <i data-lucide="images"></i>
+        <strong>从 10 月 22 日开始记录</strong>
+        <span>旧的纪念记录已经清空，新的照片和故事会出现在这里。</span>
       </div>
     </section>
 
@@ -335,13 +369,28 @@
         </div>
         <button class="icon-button" value="cancel" aria-label="关闭"><i data-lucide="x"></i></button>
       </div>
-      <label>我们在一起的日期
-        <input type="date" id="startDate" value="2025-06-16" />
-      </label>
-      <label>给这段关系起个名字
-        <input type="text" id="coupleName" value="我们的小世界" maxlength="20" />
-      </label>
+      <div class="settings-grid">
+        <label>我们在一起的日期
+          <input type="date" id="startDate" value="2026-10-22" />
+        </label>
+        <label>她的名字
+          <input type="text" id="girlName" value="她" maxlength="12" />
+        </label>
+        <label>周日下课时间
+          <input type="time" id="settingsClassTime" value="17:00" />
+        </label>
+        <label>给这段关系起个名字
+          <input type="text" id="coupleName" value="我们的小世界" maxlength="20" />
+        </label>
+      </div>
       <button class="primary-button" value="default" type="submit"><i data-lucide="check"></i> 保存设置</button>
+      <div class="backup-box">
+        <div>
+          <strong>数据备份</strong>
+          <p>JSON 文件可能因误操作或磁盘故障损坏，建议每月导出一份，并保存到两个可靠位置。</p>
+        </div>
+        <button class="secondary-button" type="button" id="exportData"><i data-lucide="download"></i> 导出全部记录</button>
+      </div>
     </form>
   </dialog>
 
@@ -355,14 +404,58 @@
         <button class="icon-button" type="button" id="closeMemory" aria-label="关闭"><i data-lucide="x"></i></button>
       </div>
       <label>记忆标题
-        <input type="text" id="memoryTitle" maxlength="30" placeholder="比如：那天的晚霞" required />
+        <input type="text" id="memoryTitle" maxlength="30" placeholder="比如：10月22日的晚霞" required />
       </label>
       <label>当时发生了什么
         <input type="text" id="memoryCaption" maxlength="40" placeholder="一句话就好" required />
       </label>
+      <label>图片 URL（可选）
+        <input type="url" id="memoryImage" maxlength="2000" placeholder="https://example.com/our-photo.jpg" />
+      </label>
       <button class="primary-button" type="submit"><i data-lucide="image-plus"></i> 保存记忆</button>
     </form>
   </dialog>
+
+  <dialog class="coupon-dialog" id="couponDialog">
+    <form class="dialog-panel" id="couponForm">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">NEW COUPON</p>
+          <h2>制作一张兑换券</h2>
+        </div>
+        <button class="icon-button" type="button" id="closeCoupon" aria-label="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <label>券的名字
+        <input id="couponTitle" maxlength="24" placeholder="比如：一个超认真拥抱" required />
+      </label>
+      <label>兑换内容
+        <input id="couponNote" maxlength="60" placeholder="比如：任何时候都可以使用" />
+      </label>
+      <button class="primary-button" type="submit"><i data-lucide="ticket-check"></i> 保存兑换券</button>
+    </form>
+  </dialog>
+
+  <dialog class="station-dialog" id="stationDialog">
+    <div class="station-shell">
+      <button class="icon-button station-close" id="closeStation" aria-label="关闭充电站"><i data-lucide="x"></i></button>
+      <div class="station-screen" id="stationScreen">
+        <div class="station-glow" aria-hidden="true"></div>
+        <p class="station-kicker">SUNDAY RECHARGE</p>
+        <p class="station-quote" id="stationQuote">点击屏幕，收一句今天的暖心话</p>
+        <button class="station-name" id="stationName">她</button>
+        <button class="station-secret-hint" id="secretLetterHint">长按这里，打开隐藏小字信</button>
+      </div>
+      <div class="hidden-letter" id="hiddenLetter" hidden>
+        <i data-lucide="mail-heart"></i>
+        <p id="hiddenLetterText"></p>
+      </div>
+    </div>
+  </dialog>
+
+  <button class="floating-station" id="stationButton">
+    <i data-lucide="heart"></i>
+    <span>周日充电站</span>
+  </button>
 
   <div class="toast" id="toast" role="status">
     <i data-lucide="sparkles"></i>
@@ -373,3 +466,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+

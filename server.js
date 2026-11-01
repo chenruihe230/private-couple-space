@@ -41,13 +41,19 @@ const MIME = {
 
 const loginAttempts = new Map();
 
+const RELATIONSHIP_START = '2026-10-22';
+
 function defaultState() {
   return {
     revision: 0,
     users: [],
+    migratedPre1022: true,
     settings: {
-      startDate: '2025-06-16',
-      coupleName: '我们的小世界'
+      // 关键配置：真正开始在一起的纪念日
+      startDate: RELATIONSHIP_START,
+      coupleName: '我们的小世界',
+      girlName: '她',
+      sundayClassEndTime: '17:00'
     },
     completedWishes: [],
     moods: {},
@@ -62,8 +68,32 @@ function defaultState() {
     ],
     memories: [],
     datePicks: {},
+    vents: [],
+    coupons: [],
     closedDays: 0
   };
+}
+
+function migrateState(state) {
+  const next = { ...defaultState(), ...state };
+  next.settings = { ...defaultState().settings, ...(state.settings || {}) };
+
+  // 一次性迁移：删除 10 月 22 日之前的旧纪念册内容，并把 10 月 22 日设为纪念日
+  if (!state.migratedPre1022) {
+    next.settings.startDate = RELATIONSHIP_START;
+    next.memories = [];
+    next.migratedPre1022 = true;
+  }
+
+  next.completedWishes = Array.isArray(next.completedWishes) ? next.completedWishes : [];
+  next.moods = next.moods || {};
+  next.notes = Array.isArray(next.notes) ? next.notes : [];
+  next.memories = Array.isArray(next.memories) ? next.memories : [];
+  next.datePicks = next.datePicks || {};
+  next.vents = Array.isArray(next.vents) ? next.vents : [];
+  next.coupons = Array.isArray(next.coupons) ? next.coupons : [];
+  next.users = Array.isArray(next.users) ? next.users : [];
+  return next;
 }
 
 function ensureData() {
@@ -76,7 +106,7 @@ function ensureData() {
 function readState() {
   ensureData();
   try {
-    return { ...defaultState(), ...JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')) };
+    return migrateState(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')));
   } catch {
     return defaultState();
   }
@@ -251,6 +281,26 @@ async function handleApi(req, res, pathname) {
     return json(res, 200, { user: session.name, state: readState() });
   }
 
+  if (pathname === '/api/export' && req.method === 'GET') {
+    const state = readState();
+    const exportData = {
+      project: '两个人的小世界',
+      exportedAt: new Date().toISOString(),
+      exportedBy: session.name,
+      backupTip: '请将该文件保存到两个可靠的位置，避免 JSON 数据损坏或丢失。',
+      data: state
+    };
+    const body = JSON.stringify(exportData, null, 2);
+    const filename = `couple-space-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-store',
+      'Content-Length': Buffer.byteLength(body)
+    });
+    return res.end(body);
+  }
+
   if (pathname === '/api/update' && req.method === 'POST') {
     const body = await readBody(req);
     const state = readState();
@@ -259,10 +309,21 @@ async function handleApi(req, res, pathname) {
     if (action === 'settings') {
       const startDate = sanitizeText(body.startDate, 20);
       const coupleName = sanitizeText(body.coupleName, 20);
+      const girlName = sanitizeText(body.girlName, 12);
+      const sundayClassEndTime = sanitizeText(body.sundayClassEndTime, 5);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
         return json(res, 400, { error: '日期格式不正确' });
       }
-      state.settings = { startDate, coupleName: coupleName || '我们的小世界' };
+      if (sundayClassEndTime && !/^\d{2}:\d{2}$/.test(sundayClassEndTime)) {
+        return json(res, 400, { error: '下课时间格式不正确' });
+      }
+      state.settings = {
+        ...state.settings,
+        startDate,
+        coupleName: coupleName || '我们的小世界',
+        girlName: girlName || '她',
+        sundayClassEndTime: sundayClassEndTime || '17:00'
+      };
     } else if (action === 'wishes') {
       const completed = Array.isArray(body.completed) ? body.completed : [];
       state.completedWishes = [...new Set(completed.filter((n) => Number.isInteger(n) && n >= 0 && n < 5))].sort();
@@ -285,14 +346,60 @@ async function handleApi(req, res, pathname) {
     } else if (action === 'memory') {
       const title = sanitizeText(body.title, 30);
       const caption = sanitizeText(body.caption, 40);
+      const image = sanitizeText(body.image, 2000);
       if (!title || !caption) return json(res, 400, { error: '记忆内容不能为空' });
+      if (image && !/^https?:\/\//i.test(image)) {
+        return json(res, 400, { error: '图片地址必须以 http:// 或 https:// 开头' });
+      }
       state.memories.push({
         id: crypto.randomUUID(),
         title,
         caption,
+        image,
         author: session.name,
         time: Date.now()
       });
+    } else if (action === 'vent') {
+      const text = sanitizeText(body.text, 80);
+      if (!text) return json(res, 400, { error: '碎碎念不能为空' });
+      state.vents.unshift({
+        id: crypto.randomUUID(),
+        text,
+        author: session.name,
+        time: Date.now()
+      });
+      state.vents = state.vents.slice(0, 40);
+    } else if (action === 'couponCreate') {
+      const title = sanitizeText(body.title, 24);
+      const note = sanitizeText(body.note, 60);
+      if (!title) return json(res, 400, { error: '兑换券名称不能为空' });
+      state.coupons.unshift({
+        id: crypto.randomUUID(),
+        title,
+        note,
+        issuer: session.name,
+        createdAt: Date.now(),
+        active: true,
+        uses: []
+      });
+      state.coupons = state.coupons.slice(0, 30);
+    } else if (action === 'couponRedeem') {
+      const id = sanitizeText(body.id, 60);
+      const coupon = state.coupons.find((item) => item.id === id);
+      if (!coupon) return json(res, 400, { error: '找不到这张兑换券' });
+      if (coupon.active === false) return json(res, 400, { error: '这张兑换券已经核销过了' });
+      coupon.uses = Array.isArray(coupon.uses) ? coupon.uses : [];
+      coupon.uses.push({
+        id: crypto.randomUUID(),
+        by: session.name,
+        time: Date.now()
+      });
+      coupon.active = false;
+    } else if (action === 'couponReset') {
+      const id = sanitizeText(body.id, 60);
+      const coupon = state.coupons.find((item) => item.id === id);
+      if (!coupon) return json(res, 400, { error: '找不到这张兑换券' });
+      coupon.active = true;
     } else if (action === 'datePick') {
       const titles = Array.isArray(body.titles) ? body.titles : [];
       state.datePicks = {
