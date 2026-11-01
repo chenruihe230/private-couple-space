@@ -8,11 +8,11 @@ services:
     plan: starter
     disk:
       name: couple-data
-      mountPath: /var/data
+      mountPath: /opt/render/project/src/data
       sizeGB: 1
     envVars:
       - key: DATA_DIR
-        value: /var/data
+        value: /opt/render/project/src/data
       - key: NODE_ENV
         value: production
       - key: ROOM_ACCESS_CODE

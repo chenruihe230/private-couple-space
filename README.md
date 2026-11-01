@@ -23,7 +23,7 @@ npm start
 5. 在 Render 的 Environment 中设置：
    - `ROOM_ACCESS_CODE`
    - `SESSION_SECRET`
-   - `DATA_DIR=/var/data`
+   - `DATA_DIR=/opt/render/project/src/data`
    - `NODE_ENV=production`
 6. 部署完成后，把 Render 网址和共同暗号发给对方
 
