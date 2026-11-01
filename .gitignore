@@ -5,3 +5,5 @@ test-results/
 *.png
 smoke.spec.js
 .env
+
+日志以及工具说明书/
