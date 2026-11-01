@@ -518,6 +518,19 @@ function initMemoryDialog() {
   renderMemories();
 }
 
+function syncSettingsForm() {
+  const startDate = document.querySelector("#startDate");
+  const coupleName = document.querySelector("#coupleName");
+  const girlName = document.querySelector("#girlName");
+  const classTime = document.querySelector("#settingsClassTime");
+  if (!startDate) return;
+
+  startDate.value = sharedState.settings.startDate || USER_CONFIG.defaultStartDate;
+  coupleName.value = sharedState.settings.coupleName || "我们的小世界";
+  girlName.value = sharedState.settings.girlName || USER_CONFIG.defaultGirlName;
+  classTime.value = sharedState.settings.sundayClassEndTime || USER_CONFIG.defaultSundayClassEndTime;
+}
+
 function initSettings() {
   const dialog = document.querySelector("#settingsDialog");
   const form = document.querySelector("#settingsForm");
@@ -526,11 +539,12 @@ function initSettings() {
   const girlName = document.querySelector("#girlName");
   const classTime = document.querySelector("#settingsClassTime");
 
-  startDate.value = sharedState.settings.startDate;
-  coupleName.value = sharedState.settings.coupleName;
-  girlName.value = sharedState.settings.girlName || USER_CONFIG.defaultGirlName;
-  classTime.value = sharedState.settings.sundayClassEndTime || USER_CONFIG.defaultSundayClassEndTime;
-  document.querySelector("#openSettings").addEventListener("click", () => dialog.showModal());
+  syncSettingsForm();
+  document.querySelector("#openSettings").addEventListener("click", () => {
+    syncSettingsForm();
+    dialog.showModal();
+  });
+  document.querySelector("#closeSettings").addEventListener("click", () => dialog.close());
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -544,6 +558,7 @@ function initSettings() {
       calculateDaysTogether();
       renderCountdown();
       renderStation();
+      syncSettingsForm();
       document.title = `${sharedState.settings.coupleName} · 情侣互动空间`;
       dialog.close();
       showToast("纪念日设置好啦");
@@ -752,6 +767,7 @@ function initCountdown() {
       });
       homeInput.value = nextValue;
       settingsInput.value = nextValue;
+      syncSettingsForm();
       renderCountdown();
       showToast("周日下课时间已经更新");
     } catch (error) {
@@ -1118,6 +1134,7 @@ async function refreshFromServer() {
     renderCoupons();
     renderCountdown();
     renderStation();
+    syncSettingsForm();
     renderDateIdeas(visibleDateIdeas);
   } catch {
     showAuth("登录已过期，请重新进入");
